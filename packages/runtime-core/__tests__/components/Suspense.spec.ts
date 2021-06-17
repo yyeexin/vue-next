@@ -1173,7 +1173,7 @@ describe('Suspense', () => {
   })
 
   describe('warnings', () => {
-    // base function to check if a combination of solts warns or not
+    // base function to check if a combination of slots warns or not
     function baseCheckWarn(
       shouldWarn: boolean,
       children: RawSlots,
@@ -1218,7 +1218,7 @@ describe('Suspense', () => {
     test('does not warn on <component :is="null" />', async () => {
       checkNoWarn({
         default: () => [resolveDynamicComponent(null)]
-        // fallback: () => null
+        fallback: () => resolveDynamicComponent(null)
       })
     })
 
