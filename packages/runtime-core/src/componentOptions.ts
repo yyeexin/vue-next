@@ -677,16 +677,31 @@ export function applyOptions(instance: ComponentInternalInstance) {
   shouldCacheAccess = true
 
   if (computedOptions) {
+    // 遍历computed对象的属性
     for (const key in computedOptions) {
+      // 取对象中的每个属性
       const opt = (computedOptions as ComputedOptions)[key]
+
+      // 获取getter方法：
+      // 1.判断该属性的值是一个函数，则认定此函数即getter方法
+      // 2.不是函数，则认定它是一个对象
+      // 3.直接去取该对象的get属性，如果get属性的值是一个函数，则认为是getter方法，否则获取getter方法失败
+      // 获取到get方法之后调用bind方法，重新显示绑定this，这样在get方法中才能通过this直接获取到data中的属性
       const get = isFunction(opt)
         ? opt.bind(publicThis, publicThis)
         : isFunction(opt.get)
           ? opt.get.bind(publicThis, publicThis)
           : NOOP
+
       if (__DEV__ && get === NOOP) {
+        // dev环境：如果没有获取到getter方法，提示没有设置getter
         warn(`Computed property "${key}" has no getter.`)
       }
+
+      // 获取setter方法：
+      // 如果该属性的值不是个函数（意思是计算属性只能是个对象的时候才能设置setter），
+      // 并且它（对象）的set属性的值是个函数，则认定此函数是setter方法，重新绑定this
+      // 否则在dev环境，设置一个提示函数，告诉用户该属性是只读的，prod环境设置一个空操作
       const set =
         !isFunction(opt) && isFunction(opt.set)
           ? opt.set.bind(publicThis)
