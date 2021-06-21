@@ -728,8 +728,11 @@ export function applyOptions(instance: ComponentInternalInstance) {
     }
   }
 
+  // 如果存在watch配置项
   if (watchOptions) {
+    // 遍历watch对象里的每个属性
     for (const key in watchOptions) {
+      // 创建侦听器
       createWatcher(watchOptions[key], ctx, publicThis, key)
     }
   }
