@@ -32,7 +32,10 @@ let renderer: Renderer<Element | ShadowRoot> | HydrationRenderer
 
 let enabledHydration = false
 
+// 创建渲染器函数
 function ensureRenderer() {
+  // 如果已经有渲染器直接返回
+  // 如果没有渲染器，那么调用createRenderer创建渲染器
   return (
     renderer ||
     (renderer = createRenderer<Node, Element | ShadowRoot>(rendererOptions))
@@ -57,6 +60,7 @@ export const hydrate = ((...args) => {
 }) as RootHydrateFunction
 
 export const createApp = ((...args) => {
+  // 1.创建app对象
   const app = ensureRenderer().createApp(...args)
 
   if (__DEV__) {
@@ -64,7 +68,12 @@ export const createApp = ((...args) => {
     injectCompilerOptionsCheck(app)
   }
 
+  // 2.这里取出app中的mount方法，因为后面要进行重写
   const { mount } = app
+
+  // 3.重写mount方法
+  // 这里重写的目的是为了考虑跨平台(app.mount里面只包含和平台无关的代码)
+  // 这些重写的代码都是一些和web关系比较大的代码(其他平台也可以进行类似的重写)
   app.mount = (containerOrSelector: Element | ShadowRoot | string): any => {
     const container = normalizeContainer(containerOrSelector)
     if (!container) return
@@ -92,7 +101,9 @@ export const createApp = ((...args) => {
     }
 
     // clear content before mounting
+    // 先清空container中原来的内容
     container.innerHTML = ''
+    // 调用真正的mount函数，进行挂在
     const proxy = mount(container, false, container instanceof SVGElement)
     if (container instanceof Element) {
       container.removeAttribute('v-cloak')

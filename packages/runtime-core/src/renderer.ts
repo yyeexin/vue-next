@@ -460,9 +460,9 @@ function baseCreateRenderer(
   // Note: functions inside this closure should use `const xxx = () => {}`
   // style in order to prevent being inlined by minifiers.
   const patch: PatchFn = (
-    n1,
-    n2,
-    container,
+    n1, // n1表示旧的vnode，当n1为null时就表示是一次挂载(挂载还是更新是n1决定的)
+    n2, // n2表示新的vnode，根据n2的type进行不同处理
+    container, // 对比后回将vnode渲染到container上
     anchor = null,
     parentComponent = null,
     parentSuspense = null,
@@ -471,6 +471,7 @@ function baseCreateRenderer(
     optimized = __DEV__ && isHmrUpdating ? false : !!n2.dynamicChildren
   ) => {
     // patching & not same type, unmount old tree
+    // 如果新的节点和旧的节点类型不同，那么会销毁整个子节点树
     if (n1 && !isSameVNodeType(n1, n2)) {
       anchor = getNextHostNode(n1)
       unmount(n1, parentComponent, parentSuspense, true)
@@ -482,15 +483,21 @@ function baseCreateRenderer(
       n2.dynamicChildren = null
     }
 
+    // 拿到节点的type/ref/shapeFlage
+    // type是判断节点的类型的
+    // shapeFlag判断具体的节点
     const { type, ref, shapeFlag } = n2
     switch (type) {
       case Text:
+        // 处理文本节点
         processText(n1, n2, container, anchor)
         break
       case Comment:
+        // 处理注释节点
         processCommentNode(n1, n2, container, anchor)
         break
       case Static:
+        // 处理静态节点
         if (n1 == null) {
           mountStaticNode(n2, container, anchor, isSVG)
         } else if (__DEV__) {
@@ -498,6 +505,7 @@ function baseCreateRenderer(
         }
         break
       case Fragment:
+        // 处理Fragment节点
         processFragment(
           n1,
           n2,
@@ -512,6 +520,7 @@ function baseCreateRenderer(
         break
       default:
         if (shapeFlag & ShapeFlags.ELEMENT) {
+          // 处理普通的DOM元素 比如div/button/span
           processElement(
             n1,
             n2,
@@ -524,6 +533,7 @@ function baseCreateRenderer(
             optimized
           )
         } else if (shapeFlag & ShapeFlags.COMPONENT) {
+          // 处理组件节点
           processComponent(
             n1,
             n2,
@@ -536,6 +546,7 @@ function baseCreateRenderer(
             optimized
           )
         } else if (shapeFlag & ShapeFlags.TELEPORT) {
+          // 处理Teleport节点
           ;(type as typeof TeleportImpl).process(
             n1 as TeleportVNode,
             n2 as TeleportVNode,
@@ -1251,6 +1262,7 @@ function baseCreateRenderer(
   ) => {
     n2.slotScopeIds = slotScopeIds
     if (n1 == null) {
+      // n1为null 表示挂载节点
       if (n2.shapeFlag & ShapeFlags.COMPONENT_KEPT_ALIVE) {
         ;(parentComponent!.ctx as KeepAliveContext).activate(
           n2,
@@ -1260,6 +1272,7 @@ function baseCreateRenderer(
           optimized
         )
       } else {
+        // 调用mountComponent挂载组件
         mountComponent(
           n2,
           container,
@@ -1271,6 +1284,7 @@ function baseCreateRenderer(
         )
       }
     } else {
+      // n1不为null 表示更新节点
       updateComponent(n1, n2, optimized)
     }
   }
@@ -1288,6 +1302,8 @@ function baseCreateRenderer(
     // mounting
     const compatMountInstance =
       __COMPAT__ && initialVNode.isCompatRoot && initialVNode.component
+
+    // 1.调用createComponentInstance创建组件的实例
     const instance: ComponentInternalInstance =
       compatMountInstance ||
       (initialVNode.component = createComponentInstance(
@@ -1315,6 +1331,8 @@ function baseCreateRenderer(
       if (__DEV__) {
         startMeasure(instance, `init`)
       }
+      // 2.setup组件实例，作用是对组件的props/slots/data等进行初始化处理
+      // 并且内部有对vue2的options api进行兼容
       setupComponent(instance)
       if (__DEV__) {
         endMeasure(instance, `init`)
@@ -1335,6 +1353,7 @@ function baseCreateRenderer(
       return
     }
 
+    // 调用设置和渲染有副作用的函数
     setupRenderEffect(
       instance,
       initialVNode,
@@ -1386,6 +1405,7 @@ function baseCreateRenderer(
     }
   }
 
+  // 有副作用的函数
   const setupRenderEffect: SetupRenderEffectFn = (
     instance,
     initialVNode,
@@ -1396,6 +1416,7 @@ function baseCreateRenderer(
     optimized
   ) => {
     const componentUpdateFn = () => {
+      // 组件没有被挂载，那么挂载组件
       if (!instance.isMounted) {
         let vnodeHook: VNodeHook | null | undefined
         const { el, props } = initialVNode
@@ -1403,6 +1424,7 @@ function baseCreateRenderer(
 
         effect.allowRecurse = false
         // beforeMount hook
+        // beforeMount的生命周期钩子函数
         if (bm) {
           invokeArrayFns(bm)
         }
@@ -2379,14 +2401,17 @@ function baseCreateRenderer(
   }
 
   const render: RootRenderFunction = (vnode, container, isSVG) => {
+    // 如果vnode为null，那么就会销毁组件
     if (vnode == null) {
       if (container._vnode) {
         unmount(container._vnode, null, null, true)
       }
     } else {
+      // 创建或者更新组件都是使用patch函数(这里就是将根组件挂载到DOM上)
       patch(container._vnode || null, vnode, container, null, null, null, isSVG)
     }
     flushPostFlushCbs()
+    // 放到container上面 缓存vnode
     container._vnode = vnode
   }
 

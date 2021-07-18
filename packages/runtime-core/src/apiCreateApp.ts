@@ -182,6 +182,7 @@ export function createAppAPI<HostElement>(
 
     let isMounted = false
 
+    // 定义app对象
     const app: App = (context.app = {
       _uid: uid++,
       _component: rootComponent as ConcreteComponent,
@@ -273,6 +274,7 @@ export function createAppAPI<HostElement>(
         isSVG?: boolean
       ): any {
         if (!isMounted) {
+          // 1.使用createVNode函数创建根组件的vnode对象
           const vnode = createVNode(
             rootComponent as ConcreteComponent,
             rootProps
@@ -291,6 +293,7 @@ export function createAppAPI<HostElement>(
           if (isHydrate && hydrate) {
             hydrate(vnode as VNode<Node, Element>, rootContainer as any)
           } else {
+            // 渲染vnode
             render(vnode, rootContainer, isSVG)
           }
           isMounted = true
@@ -346,6 +349,7 @@ export function createAppAPI<HostElement>(
       installAppCompatProperties(app, context, render)
     }
 
+    // 返回app对象
     return app
   }
 }
