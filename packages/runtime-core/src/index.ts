@@ -34,7 +34,12 @@ export {
   getCurrentScope,
   onScopeDispose
 } from '@vue/reactivity'
-export { watch, watchEffect, watchPostEffect } from './apiWatch'
+export {
+  watch,
+  watchEffect,
+  watchPostEffect,
+  watchSyncEffect
+} from './apiWatch'
 export {
   onBeforeMount,
   onMounted,
@@ -341,9 +346,9 @@ const _compatUtils = {
 /**
  * @internal only exposed in compat builds.
  */
-export const compatUtils = (__COMPAT__
-  ? _compatUtils
-  : null) as typeof _compatUtils
+export const compatUtils = (
+  __COMPAT__ ? _compatUtils : null
+) as typeof _compatUtils
 
 // Ref macros ------------------------------------------------------------------
 // for dts generation only

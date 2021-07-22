@@ -51,7 +51,7 @@ import {
   ExtractPropTypes,
   ExtractDefaultPropTypes
 } from './componentProps'
-import { EmitsOptions } from './componentEmits'
+import { EmitsOptions, EmitsToProps } from './componentEmits'
 import { Directive } from './directives'
 import {
   CreateComponentPublicInstance,
@@ -91,14 +91,14 @@ export interface ComponentCustomOptions {}
 export type RenderFunction = () => VNodeChild
 
 type ExtractOptionProp<T> = T extends ComponentOptionsBase<
-  infer P,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any
+  infer P, // Props
+  any, // RawBindings
+  any, // D
+  any, // C
+  any, // M
+  any, // Mixin
+  any, // Extends
+  any // EmitsOptions
 >
   ? unknown extends P ? {} : P
   : {}
@@ -220,9 +220,10 @@ export type ComponentOptionsWithoutProps<
   Mixin extends ComponentOptionsMixin = ComponentOptionsMixin,
   Extends extends ComponentOptionsMixin = ComponentOptionsMixin,
   E extends EmitsOptions = EmitsOptions,
-  EE extends string = string
+  EE extends string = string,
+  PE = Props & EmitsToProps<E>
 > = ComponentOptionsBase<
-  Props,
+  PE,
   RawBindings,
   D,
   C,
@@ -235,7 +236,7 @@ export type ComponentOptionsWithoutProps<
 > & {
   props?: undefined
 } & ThisType<
-    CreateComponentPublicInstance<{}, RawBindings, D, C, M, Mixin, Extends, E>
+    CreateComponentPublicInstance<PE, RawBindings, D, C, M, Mixin, Extends, E>
   >
 
 export type ComponentOptionsWithArrayProps<
@@ -248,7 +249,7 @@ export type ComponentOptionsWithArrayProps<
   Extends extends ComponentOptionsMixin = ComponentOptionsMixin,
   E extends EmitsOptions = EmitsOptions,
   EE extends string = string,
-  Props = Readonly<{ [key in PropNames]?: any }>
+  Props = Readonly<{ [key in PropNames]?: any }> & EmitsToProps<E>
 > = ComponentOptionsBase<
   Props,
   RawBindings,
@@ -285,7 +286,7 @@ export type ComponentOptionsWithObjectProps<
   Extends extends ComponentOptionsMixin = ComponentOptionsMixin,
   E extends EmitsOptions = EmitsOptions,
   EE extends string = string,
-  Props = Readonly<ExtractPropTypes<PropsOptions>>,
+  Props = Readonly<ExtractPropTypes<PropsOptions>> & EmitsToProps<E>,
   Defaults = ExtractDefaultPropTypes<PropsOptions>
 > = ComponentOptionsBase<
   Props,
@@ -471,7 +472,7 @@ interface LegacyOptions<
   __differentiator?: keyof D | keyof C | keyof M
 }
 
-type MergedHook<T = (() => void)> = T | T[]
+type MergedHook<T = () => void> = T | T[]
 
 export type MergedComponentOptions = ComponentOptions &
   MergedComponentOptionsOverride
@@ -689,7 +690,6 @@ export function applyOptions(instance: ComponentInternalInstance) {
         : isFunction(opt.get)
           ? opt.get.bind(publicThis, publicThis)
           : NOOP
-
       if (__DEV__ && get === NOOP) {
         // dev环境：如果没有获取到getter方法，提示没有设置getter
         warn(`Computed property "${key}" has no getter.`)

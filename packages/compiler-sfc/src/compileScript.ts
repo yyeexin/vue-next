@@ -678,7 +678,9 @@ export function compileScript(
       .map(key => {
         let defaultString: string | undefined
         if (hasStaticDefaults) {
-          const prop = (propsRuntimeDefaults as ObjectExpression).properties.find(
+          const prop = (
+            propsRuntimeDefaults as ObjectExpression
+          ).properties.find(
             (node: any) => node.key.name === key
           ) as ObjectProperty
           if (prop) {
@@ -776,9 +778,7 @@ export function compileScript(
             // rewrite to `import { x as __default__ } from './x'` and
             // add to top
             s.prepend(
-              `import { ${
-                defaultSpecifier.local.name
-              } as ${defaultTempVar} } from '${node.source.value}'\n`
+              `import { ${defaultSpecifier.local.name} as ${defaultTempVar} } from '${node.source.value}'\n`
             )
           } else {
             // export { x as default }
@@ -1008,7 +1008,7 @@ export function compileScript(
 
     if (isTS) {
       // runtime enum
-      if (node.type === 'TSEnumDeclaration' && !node.const) {
+      if (node.type === 'TSEnumDeclaration') {
         registerBinding(setupBindings, node.id, BindingTypes.SETUP_CONST)
       }
 
@@ -1376,11 +1376,11 @@ export function compileScript(
     ...scriptSetup,
     bindings: bindingMetadata,
     content: s.toString(),
-    map: (s.generateMap({
+    map: s.generateMap({
       source: filename,
       hires: true,
       includeContent: true
-    }) as unknown) as RawSourceMap,
+    }) as unknown as RawSourceMap,
     scriptAst,
     scriptSetupAst
   }
@@ -1470,8 +1470,8 @@ function walkObjectPattern(
           const type = isDefineCall
             ? BindingTypes.SETUP_CONST
             : isConst
-              ? BindingTypes.SETUP_MAYBE_REF
-              : BindingTypes.SETUP_LET
+            ? BindingTypes.SETUP_MAYBE_REF
+            : BindingTypes.SETUP_LET
           registerBinding(bindings, p.key, type)
         } else {
           walkPattern(p.value, bindings, isConst, isDefineCall)
@@ -1507,8 +1507,8 @@ function walkPattern(
     const type = isDefineCall
       ? BindingTypes.SETUP_CONST
       : isConst
-        ? BindingTypes.SETUP_MAYBE_REF
-        : BindingTypes.SETUP_LET
+      ? BindingTypes.SETUP_MAYBE_REF
+      : BindingTypes.SETUP_LET
     registerBinding(bindings, node, type)
   } else if (node.type === 'RestElement') {
     // argument can only be identifer when destructuring
@@ -1523,8 +1523,8 @@ function walkPattern(
       const type = isDefineCall
         ? BindingTypes.SETUP_CONST
         : isConst
-          ? BindingTypes.SETUP_MAYBE_REF
-          : BindingTypes.SETUP_LET
+        ? BindingTypes.SETUP_MAYBE_REF
+        : BindingTypes.SETUP_LET
       registerBinding(bindings, node.left, type)
     } else {
       walkPattern(node.left, bindings, isConst)
@@ -1646,15 +1646,16 @@ function inferRuntimeType(
       }
       return [`null`]
 
+    case 'TSParenthesizedType':
+      return inferRuntimeType(node.typeAnnotation, declaredTypes)
     case 'TSUnionType':
       return [
         ...new Set(
-          [].concat(node.types.map(t =>
-            inferRuntimeType(t, declaredTypes)
-          ) as any)
+          [].concat(
+            node.types.map(t => inferRuntimeType(t, declaredTypes)) as any
+          )
         )
       ]
-
     case 'TSIntersectionType':
       return ['Object']
 
@@ -1667,8 +1668,8 @@ function toRuntimeTypeString(types: string[]) {
   return types.some(t => t === 'null')
     ? `null`
     : types.length > 1
-      ? `[${types.join(', ')}]`
-      : types[0]
+    ? `[${types.join(', ')}]`
+    : types[0]
 }
 
 function extractRuntimeEmits(
