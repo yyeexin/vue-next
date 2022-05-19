@@ -67,11 +67,10 @@ export function renderList(
   } else if (typeof source === 'number') {
     if (__DEV__ && !Number.isInteger(source)) {
       warn(`The v-for range expect an integer value but got ${source}.`)
-      return []
     }
     ret = new Array(source)
     for (let i = 0; i < source; i++) {
-      ret[i] = renderItem(i + 1, i)
+      ret[i] = renderItem(i + 1, i, undefined, cached && cached[i])
     }
   } else if (isObject(source)) {
     if (source[Symbol.iterator as any]) {

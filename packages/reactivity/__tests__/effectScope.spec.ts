@@ -6,7 +6,8 @@ import {
   onScopeDispose,
   computed,
   ref,
-  ComputedRef
+  ComputedRef,
+  getCurrentScope
 } from '../src'
 
 describe('reactivity/effect/scope', () => {
@@ -77,8 +78,9 @@ describe('reactivity/effect/scope', () => {
       })
     })
 
-    expect(scope.effects.length).toBe(2)
-    expect(scope.effects[1]).toBeInstanceOf(EffectScope)
+    expect(scope.effects.length).toBe(1)
+    expect(scope.scopes!.length).toBe(1)
+    expect(scope.scopes![0]).toBeInstanceOf(EffectScope)
 
     expect(dummy).toBe(0)
     counter.num = 7
@@ -118,7 +120,7 @@ describe('reactivity/effect/scope', () => {
     counter.num = 6
     expect(dummy).toBe(7)
 
-    // nested scope should not be stoped
+    // nested scope should not be stopped
     expect(doubled).toBe(12)
   })
 
@@ -172,7 +174,7 @@ describe('reactivity/effect/scope', () => {
     expect(doubled).toBe(undefined)
   })
 
-  it('should fire onDispose hook', () => {
+  it('should fire onScopeDispose hook', () => {
     let dummy = 0
 
     const scope = new EffectScope()
@@ -189,6 +191,33 @@ describe('reactivity/effect/scope', () => {
 
     scope.stop()
     expect(dummy).toBe(7)
+  })
+
+  it('should warn onScopeDispose() is called when there is no active effect scope', () => {
+    const spy = jest.fn()
+    const scope = new EffectScope()
+    scope.run(() => {
+      onScopeDispose(spy)
+    })
+
+    expect(spy).toHaveBeenCalledTimes(0)
+
+    onScopeDispose(spy)
+
+    expect(
+      '[Vue warn] onScopeDispose() is called when there is no active effect scope to be associated with.'
+    ).toHaveBeenWarned()
+
+    scope.stop()
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('should dereference child scope from parent scope after stopping child scope (no memleaks)', () => {
+    const parent = new EffectScope()
+    const child = parent.run(() => new EffectScope())!
+    expect(parent.scopes!.includes(child)).toBe(true)
+    child.stop()
+    expect(parent.scopes!.includes(child)).toBe(false)
   })
 
   it('test with higher level APIs', async () => {
@@ -234,5 +263,18 @@ describe('reactivity/effect/scope', () => {
     expect(computedSpy).toHaveBeenCalledTimes(2)
     expect(watchSpy).toHaveBeenCalledTimes(1)
     expect(watchEffectSpy).toHaveBeenCalledTimes(2)
+  })
+
+  it('getCurrentScope() stays valid when running a detached nested EffectScope', () => {
+    const parentScope = new EffectScope()
+
+    parentScope.run(() => {
+      const currentScope = getCurrentScope()
+      expect(currentScope).toBeDefined()
+      const detachedScope = new EffectScope(true)
+      detachedScope.run(() => {})
+
+      expect(getCurrentScope()).toBe(currentScope)
+    })
   })
 })

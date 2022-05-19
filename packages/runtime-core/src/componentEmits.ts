@@ -8,7 +8,8 @@ import {
   isArray,
   isFunction,
   isOn,
-  toNumber
+  toNumber,
+  UnionToIntersection
 } from '@vue/shared'
 import {
   ComponentInternalInstance,
@@ -18,7 +19,6 @@ import {
 } from './component'
 import { callWithAsyncErrorHandling, ErrorCodes } from './errorHandling'
 import { warn } from './warning'
-import { UnionToIntersection } from './helpers/typeUtils'
 import { devtoolsComponentEmit } from './devtools'
 import { AppContext } from './apiCreateApp'
 import { emit as compatInstanceEmit } from './compat/instanceEventEmitter'
@@ -44,7 +44,11 @@ export type EmitsToProps<T extends EmitsOptions> = T extends string[]
         `on${Capitalize<string & keyof T>}`]?: K extends `on${infer C}`
         ? T[Uncapitalize<C>] extends null
           ? (...args: any[]) => any
-          : T[Uncapitalize<C>]
+          : (
+              ...args: T[Uncapitalize<C>] extends (...args: infer P) => any
+                ? P
+                : never
+            ) => any
         : never
     }
   : {}
@@ -69,6 +73,7 @@ export function emit(
   event: string,
   ...rawArgs: any[]
 ) {
+  if (instance.isUnmounted) return
   const props = instance.vnode.props || EMPTY_OBJ
 
   if (__DEV__) {
@@ -117,7 +122,8 @@ export function emit(
     const { number, trim } = props[modifiersKey] || EMPTY_OBJ
     if (trim) {
       args = rawArgs.map(a => a.trim())
-    } else if (number) {
+    }
+    if (number) {
       args = rawArgs.map(toNumber)
     }
   }

@@ -1015,6 +1015,71 @@ describe('compiler: parse', () => {
       })
     })
 
+    // https://github.com/vuejs/core/issues/4251
+    test('class attribute should ignore whitespace when parsed', () => {
+      const ast = baseParse('<div class=" \n\t c \t\n "></div>')
+      const element = ast.children[0] as ElementNode
+
+      expect(element).toStrictEqual({
+        children: [],
+        codegenNode: undefined,
+        isSelfClosing: false,
+        loc: {
+          end: {
+            column: 10,
+            line: 3,
+            offset: 29
+          },
+          source: '<div class=" \n\t c \t\n "></div>',
+          start: {
+            column: 1,
+            line: 1,
+            offset: 0
+          }
+        },
+        ns: Namespaces.HTML,
+        props: [
+          {
+            loc: {
+              end: {
+                column: 3,
+                line: 3,
+                offset: 22
+              },
+              source: 'class=" \n\t c \t\n "',
+              start: {
+                column: 6,
+                line: 1,
+                offset: 5
+              }
+            },
+            name: 'class',
+            type: NodeTypes.ATTRIBUTE,
+            value: {
+              content: 'c',
+              loc: {
+                end: {
+                  column: 3,
+                  line: 3,
+                  offset: 22
+                },
+                source: '" \n\t c \t\n "',
+                start: {
+                  column: 12,
+                  line: 1,
+                  offset: 11
+                }
+              },
+              type: NodeTypes.TEXT
+            }
+          }
+        ],
+        tag: 'div',
+        tagType: ElementTypes.ELEMENT,
+        type: NodeTypes.ELEMENT
+      })
+    })
+
     test('directive with no value', () => {
       const ast = baseParse('<div v-if/>')
       const directive = (ast.children[0] as ElementNode).props[0]
@@ -1241,6 +1306,27 @@ describe('compiler: parse', () => {
           start: { offset: 5, line: 1, column: 6 },
           end: { offset: 21, line: 1, column: 22 },
           source: 'v-on:[a.b].camel'
+        }
+      })
+    })
+    test('directive with no name', () => {
+      let errorCode = -1
+      const ast = baseParse('<div v-/>', {
+        onError: err => {
+          errorCode = err.code as number
+        }
+      })
+      const directive = (ast.children[0] as ElementNode).props[0]
+
+      expect(errorCode).toBe(ErrorCodes.X_MISSING_DIRECTIVE_NAME)
+      expect(directive).toStrictEqual({
+        type: NodeTypes.ATTRIBUTE,
+        name: 'v-',
+        value: undefined,
+        loc: {
+          start: { offset: 5, line: 1, column: 6 },
+          end: { offset: 7, line: 1, column: 8 },
+          source: 'v-'
         }
       })
     })
@@ -1937,7 +2023,7 @@ foo
         isPreTag: tag => tag === 'pre'
       })
       const elementAfterPre = ast.children[1] as ElementNode
-      // should not affect the <span> and condense its whitepsace inside
+      // should not affect the <span> and condense its whitespace inside
       expect((elementAfterPre.children[0] as TextNode).content).toBe(` foo bar`)
     })
 

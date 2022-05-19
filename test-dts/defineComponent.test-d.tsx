@@ -1,5 +1,6 @@
 import {
   describe,
+  test,
   Component,
   defineComponent,
   PropType,
@@ -21,6 +22,7 @@ describe('with object props', () => {
     b: string
     e?: Function
     h: boolean
+    j: undefined | (() => string | undefined)
     bb: string
     bbb: string
     bbbb: string | undefined
@@ -41,102 +43,112 @@ describe('with object props', () => {
     kkk?: any
     validated?: string
     date?: Date
+    l?: Date
+    ll?: Date | number
+    lll?: string | number
   }
 
   type GT = string & { __brand: unknown }
 
-  const MyComponent = defineComponent({
-    props: {
-      a: Number,
-      // required should make property non-void
-      b: {
-        type: String,
-        required: true
-      },
-      e: Function,
-      h: Boolean,
-      // default value should infer type and make it non-void
-      bb: {
-        default: 'hello'
-      },
-      bbb: {
-        // Note: default function value requires arrow syntax + explicit
-        // annotation
-        default: (props: any) => (props.bb as string) || 'foo'
-      },
-      bbbb: {
-        type: String,
-        default: undefined
-      },
-      bbbbb: {
-        type: String,
-        default: () => undefined
-      },
-      // explicit type casting
-      cc: Array as PropType<string[]>,
-      // required + type casting
-      dd: {
-        type: Object as PropType<{ n: 1 }>,
-        required: true
-      },
-      // return type
-      ee: Function as PropType<() => string>,
-      // arguments + object return
-      ff: Function as PropType<(a: number, b: string) => { a: boolean }>,
-      // explicit type casting with constructor
-      ccc: Array as () => string[],
-      // required + contructor type casting
-      ddd: {
-        type: Array as () => string[],
-        required: true
-      },
-      // required + object return
-      eee: {
-        type: Function as PropType<() => { a: string }>,
-        required: true
-      },
-      // required + arguments + object return
-      fff: {
-        type: Function as PropType<(a: number, b: string) => { a: boolean }>,
-        required: true
-      },
-      hhh: {
-        type: Boolean,
-        required: true
-      },
-      // default + type casting
-      ggg: {
-        type: String as PropType<'foo' | 'bar'>,
-        default: 'foo'
-      },
-      // default + function
-      ffff: {
-        type: Function as PropType<(a: number, b: string) => { a: boolean }>,
-        default: (a: number, b: string) => ({ a: a > +b })
-      },
-      // union + function with different return types
-      iii: Function as PropType<(() => string) | (() => number)>,
-      // union + function with different args & same return type
-      jjj: {
-        type: Function as PropType<
-          ((arg1: string) => string) | ((arg1: string, arg2: string) => string)
-        >,
-        required: true
-      },
-      kkk: null,
-      validated: {
-        type: String,
-        // validator requires explicit annotation
-        validator: (val: unknown) => val !== ''
-      },
-      date: Date
+  const props = {
+    a: Number,
+    // required should make property non-void
+    b: {
+      type: String,
+      required: true as true
     },
+    e: Function,
+    h: Boolean,
+    j: Function as PropType<undefined | (() => string | undefined)>,
+    // default value should infer type and make it non-void
+    bb: {
+      default: 'hello'
+    },
+    bbb: {
+      // Note: default function value requires arrow syntax + explicit
+      // annotation
+      default: (props: any) => (props.bb as string) || 'foo'
+    },
+    bbbb: {
+      type: String,
+      default: undefined
+    },
+    bbbbb: {
+      type: String,
+      default: () => undefined
+    },
+    // explicit type casting
+    cc: Array as PropType<string[]>,
+    // required + type casting
+    dd: {
+      type: Object as PropType<{ n: 1 }>,
+      required: true as true
+    },
+    // return type
+    ee: Function as PropType<() => string>,
+    // arguments + object return
+    ff: Function as PropType<(a: number, b: string) => { a: boolean }>,
+    // explicit type casting with constructor
+    ccc: Array as () => string[],
+    // required + constructor type casting
+    ddd: {
+      type: Array as () => string[],
+      required: true as true
+    },
+    // required + object return
+    eee: {
+      type: Function as PropType<() => { a: string }>,
+      required: true as true
+    },
+    // required + arguments + object return
+    fff: {
+      type: Function as PropType<(a: number, b: string) => { a: boolean }>,
+      required: true as true
+    },
+    hhh: {
+      type: Boolean,
+      required: true as true
+    },
+    // default + type casting
+    ggg: {
+      type: String as PropType<'foo' | 'bar'>,
+      default: 'foo'
+    },
+    // default + function
+    ffff: {
+      type: Function as PropType<(a: number, b: string) => { a: boolean }>,
+      default: (a: number, b: string) => ({ a: a > +b })
+    },
+    // union + function with different return types
+    iii: Function as PropType<(() => string) | (() => number)>,
+    // union + function with different args & same return type
+    jjj: {
+      type: Function as PropType<
+        ((arg1: string) => string) | ((arg1: string, arg2: string) => string)
+      >,
+      required: true as true
+    },
+    kkk: null,
+    validated: {
+      type: String,
+      // validator requires explicit annotation
+      validator: (val: unknown) => val !== ''
+    },
+    date: Date,
+    l: [Date],
+    ll: [Date, Number],
+    lll: [String, Number]
+  }
+
+  const MyComponent = defineComponent({
+    props,
     setup(props) {
       // type assertion. See https://github.com/SamVerschueren/tsd
       expectType<ExpectedProps['a']>(props.a)
       expectType<ExpectedProps['b']>(props.b)
       expectType<ExpectedProps['e']>(props.e)
       expectType<ExpectedProps['h']>(props.h)
+      expectType<ExpectedProps['j']>(props.j)
       expectType<ExpectedProps['bb']>(props.bb)
       expectType<ExpectedProps['bbb']>(props.bbb)
       expectType<ExpectedProps['bbbb']>(props.bbbb)
@@ -161,6 +173,9 @@ describe('with object props', () => {
       expectType<ExpectedProps['kkk']>(props.kkk)
       expectType<ExpectedProps['validated']>(props.validated)
       expectType<ExpectedProps['date']>(props.date)
+      expectType<ExpectedProps['l']>(props.l)
+      expectType<ExpectedProps['ll']>(props.ll)
+      expectType<ExpectedProps['lll']>(props.lll)
 
       // @ts-expect-error props should be readonly
       expectError((props.a = 1))
@@ -175,6 +190,9 @@ describe('with object props', () => {
           g: ref('hello' as GT)
         })
       }
+    },
+    provide() {
+      return {}
     },
     render() {
       const props = this.$props
@@ -246,6 +264,18 @@ describe('with object props', () => {
 
   expectType<Component>(MyComponent)
 
+  expectType<typeof props>(MyComponent.props)
+  // @ts-expect-error it should be an object and not any
+  expectError<[]>(MyComponent.props)
+
+  expectType<() => {}>(MyComponent.provide)
+  // @ts-expect-error
+  expectError<[]>(MyComponent.provide)
+
+  expectType<() => null>(MyComponent.render)
+
+  expectType<Function | undefined>(defineComponent({}).render)
+
   // Test TSX
   expectType<JSX.Element>(
     <MyComponent
@@ -270,6 +300,7 @@ describe('with object props', () => {
       key={'foo'}
       // should allow ref
       ref={'foo'}
+      ref_for={true}
     />
   )
 
@@ -321,35 +352,31 @@ describe('with object props', () => {
   })
 })
 
-// describe('type inference w/ optional props declaration', () => {
-//   const MyComponent = defineComponent({
-//     setup(_props: { msg: string }) {
-//       return {
-//         a: 1
-//       }
-//     },
-//     render() {
-//       expectType<string>(this.$props.msg)
-//       // props should be readonly
-//       expectError((this.$props.msg = 'foo'))
-//       // should not expose on `this`
-//       expectError(this.msg)
-//       expectType<number>(this.a)
-//       return null
-//     }
-//   })
+describe('type inference w/ optional props declaration', () => {
+  const MyComponent = defineComponent<{ a: string[]; msg: string }>({
+    setup(props) {
+      expectType<string>(props.msg)
+      expectType<string[]>(props.a)
+      return {
+        b: 1
+      }
+    }
+  })
 
-//   expectType<JSX.Element>(<MyComponent msg="foo" />)
-//   expectError(<MyComponent />)
-//   expectError(<MyComponent msg={1} />)
-// })
+  expectType<JSX.Element>(<MyComponent msg="1" a={['1']} />)
+  // @ts-expect-error
+  expectError(<MyComponent />)
+  // @ts-expect-error
+  expectError(<MyComponent msg="1" />)
+})
 
-// describe('type inference w/ direct setup function', () => {
-//   const MyComponent = defineComponent((_props: { msg: string }) => {})
-//   expectType<JSX.Element>(<MyComponent msg="foo" />)
-//   expectError(<MyComponent />)
-//   expectError(<MyComponent msg={1} />)
-// })
+describe('type inference w/ direct setup function', () => {
+  const MyComponent = defineComponent((_props: { msg: string }) => {})
+  expectType<JSX.Element>(<MyComponent msg="foo" />)
+  // @ts-expect-error
+  expectError(<MyComponent />)
+  expectError(<MyComponent msg="1" />)
+})
 
 describe('type inference w/ array props declaration', () => {
   const MyComponent = defineComponent({
@@ -396,12 +423,12 @@ describe('type inference w/ options API', () => {
       }
     },
     computed: {
-      d(): number {
+      d() {
         expectType<number>(this.b)
         return this.b + 1
       },
       e: {
-        get(): number {
+        get() {
           expectType<number>(this.b)
           expectType<number>(this.d)
 
@@ -514,10 +541,10 @@ describe('with mixins', () => {
       expectType<string>(props.aP1)
     },
     computed: {
-      dC1(): number {
+      dC1() {
         return this.d + this.a
       },
-      dC2(): string {
+      dC2() {
         return this.aP1 + 'dC2'
       }
     }
@@ -926,7 +953,7 @@ describe('emits', () => {
     },
     mounted() {
       // #3599
-      this.$nextTick(function() {
+      this.$nextTick(function () {
         // this should be bound to this instance
 
         this.$emit('click', 1)
@@ -966,6 +993,33 @@ describe('emits', () => {
     }
   })
 
+  // with tsx
+  const Component = defineComponent({
+    emits: {
+      click: (n: number) => typeof n === 'number'
+    },
+    setup(props, { emit }) {
+      expectType<((n: number) => any) | undefined>(props.onClick)
+      emit('click', 1)
+      //  @ts-expect-error
+      expectError(emit('click'))
+      //  @ts-expect-error
+      expectError(emit('click', 'foo'))
+    }
+  })
+
+  defineComponent({
+    render() {
+      return (
+        <Component
+          onClick={(n: number) => {
+            return n + 1
+          }}
+        />
+      )
+    }
+  })
+
   // without emits
   defineComponent({
     setup(props, { emit }) {
@@ -992,7 +1046,7 @@ describe('emits', () => {
 })
 
 describe('componentOptions setup should be `SetupContext`', () => {
-  expect<ComponentOptions['setup']>(
+  expectType<ComponentOptions['setup']>(
     {} as (props: Record<string, any>, ctx: SetupContext) => any
   )
 })
@@ -1086,6 +1140,20 @@ describe('async setup', () => {
 
   // setup context properties should be mutable
   vm.a = 2
+})
+
+// #5948
+describe('DefineComponent should infer correct types when assigning to Component', () => {
+  let component: Component
+  component = defineComponent({
+    setup(_, { attrs, slots }) {
+      // @ts-expect-error should not be any
+      expectType<[]>(attrs)
+      // @ts-expect-error should not be any
+      expectType<[]>(slots)
+    }
+  })
+  expectType<Component>(component)
 })
 
 // check if defineComponent can be exported

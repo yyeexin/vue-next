@@ -489,7 +489,7 @@ describe('scheduler', () => {
     })
     try {
       await nextTick()
-    } catch (e) {
+    } catch (e: any) {
       expect(e).toBe(err)
     }
     expect(
@@ -539,18 +539,6 @@ describe('scheduler', () => {
     queuePostFlushCb(cb)
     await nextTick()
     expect(count).toBe(5)
-  })
-
-  test('should prevent duplicate queue', async () => {
-    let count = 0
-    const job = () => {
-      count++
-    }
-    job.cb = true
-    queueJob(job)
-    queueJob(job)
-    await nextTick()
-    expect(count).toBe(1)
   })
 
   // #1947 flushPostFlushCbs should handle nested calls

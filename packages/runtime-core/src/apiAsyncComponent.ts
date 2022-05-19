@@ -111,7 +111,7 @@ export function defineAsyncComponent<
     )
   }
 
-  return defineComponent({
+  return defineComponent<{}>({
     name: 'AsyncComponentWrapper',
 
     __asyncLoader: load,
@@ -141,7 +141,7 @@ export function defineAsyncComponent<
       // suspense-controlled or SSR.
       if (
         (__FEATURE_SUSPENSE__ && suspensible && instance.suspense) ||
-        (__NODE_JS__ && isInSSRComponentSetup)
+        (__SSR__ && isInSSRComponentSetup)
       ) {
         return load()
           .then(comp => {
@@ -206,12 +206,15 @@ export function defineAsyncComponent<
         }
       }
     }
-  }) as any
+  }) as T
 }
 
 function createInnerComp(
   comp: ConcreteComponent,
-  { vnode: { ref, props, children } }: ComponentInternalInstance
+  {
+    vnode: { ref, props, children, shapeFlag },
+    parent
+  }: ComponentInternalInstance
 ) {
   const vnode = createVNode(comp, props, children)
   // ensure inner component inherits the async wrapper's ref owner

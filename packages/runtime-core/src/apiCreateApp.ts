@@ -3,7 +3,8 @@ import {
   Data,
   validateComponentName,
   Component,
-  ComponentInternalInstance
+  ComponentInternalInstance,
+  getExposeProxy
 } from './component'
 import {
   ComponentOptions,
@@ -82,15 +83,21 @@ export interface AppConfig {
   ) => void
 
   /**
+   * Options to pass to `@vue/compiler-dom`.
+   * Only supported in runtime compiler build.
+   */
+  compilerOptions: RuntimeCompilerOptions
+
+  /**
    * @deprecated use config.compilerOptions.isCustomElement
    */
   isCustomElement?: (tag: string) => boolean
 
   /**
-   * Options to pass to @vue/compiler-dom.
-   * Only supported in runtime compiler build.
+   * Temporary config for opt-in to unwrap injected refs.
+   * TODO deprecate in 3.3
    */
-  compilerOptions: RuntimeCompilerOptions
+  unwrapInjectedRef?: boolean
 }
 
 export interface AppContext {
@@ -172,6 +179,10 @@ export function createAppAPI<HostElement>(
   hydrate?: RootHydrateFunction
 ): CreateAppFunction<HostElement> {
   return function createApp(rootComponent, rootProps = null) {
+    if (!isFunction(rootComponent)) {
+      rootComponent = { ...rootComponent }
+    }
+
     if (rootProps != null && !isObject(rootProps)) {
       __DEV__ && warn(`root props passed to app.mount() must be an object.`)
       rootProps = null
@@ -275,6 +286,14 @@ export function createAppAPI<HostElement>(
       ): any {
         if (!isMounted) {
           // 1.使用createVNode函数创建根组件的vnode对象
+          // #5571
+          if (__DEV__ && (rootContainer as any).__vue_app__) {
+            warn(
+              `There is already an app instance mounted on the host container.\n` +
+                ` If you want to mount another app on the same host container,` +
+                ` you need to unmount the previous app by calling \`app.unmount()\` first.`
+            )
+          }
           const vnode = createVNode(
             rootComponent as ConcreteComponent,
             rootProps
@@ -306,7 +325,7 @@ export function createAppAPI<HostElement>(
             devtoolsInitApp(app, version)
           }
 
-          return vnode.component!.proxy
+          return getExposeProxy(vnode.component!) || vnode.component!.proxy
         } else if (__DEV__) {
           warn(
             `App has already been mounted.\n` +
@@ -337,9 +356,8 @@ export function createAppAPI<HostElement>(
               `It will be overwritten with the new value.`
           )
         }
-        // TypeScript doesn't allow symbols as index type
-        // https://github.com/Microsoft/TypeScript/issues/24587
-        context.provides[key as string] = value
+
+        context.provides[key as string | symbol] = value
 
         return app
       }
